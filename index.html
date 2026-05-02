@@ -2,32 +2,26 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trading AI PRO + Project 2</title>
-<script src="https://s3.tradingview.com/tv.js"></script>
+<title>Project 2 - Trading Checklist</title>
 
 <style>
 body { background:#0d1117; color:#fff; font-family:sans-serif; margin:0; }
 .container { max-width:420px; margin:auto; padding:10px; }
 .card { background:#161b22; padding:12px; border-radius:10px; margin-bottom:10px; }
 
-input,button {
+button {
  width:100%;
- padding:10px;
- margin:5px 0;
+ padding:12px;
  border:none;
  border-radius:8px;
- background:#0d1117;
+ background:#238636;
  color:#fff;
+ font-size:16px;
 }
-
-button { background:#238636; }
 
 .buy{color:#00ff9f;}
 .sell{color:#ff4d4d;}
 .warn{color:#ffaa00;}
-.ai{color:#00c3ff;}
-
-#chart { height:300px; }
 </style>
 </head>
 
@@ -35,206 +29,108 @@ button { background:#238636; }
 
 <div class="container">
 
-<h2>🚀 Trading AI PRO + Project 2</h2>
+<h2>📊 Project 2 - Trading Checklist</h2>
 
-<!-- SYMBOL -->
 <div class="card">
-<input id="symbolInput" placeholder="BTCUSDT / ETHUSDT">
-<button onclick="init()">Load</button>
+<h3>🟢 BUY SETUPS</h3>
+<label><input type="checkbox" id="b1"> Day Up + 4H Up (Strong Trend)</label><br>
+<label><input type="checkbox" id="b2"> Day Down + 4H Bullish Divergence</label><br>
+<label><input type="checkbox" id="b3"> Day Down + Green Candle + 4H Bullish Divergence</label>
 </div>
 
-<div id="chart"></div>
-
-<div class="card">📡 Price: <span id="price">-</span></div>
-
-<!-- AUTO -->
-<div class="card"><h3>🤖 Auto Signal</h3><div id="autoSignal"></div></div>
-
-<!-- MTF -->
-<div class="card"><h3>🧠 MTF Trend</h3><div id="mtfSignal"></div></div>
-
-<!-- AI -->
-<div class="card"><h3>🧠 AI Predictor</h3><div id="aiSignal"></div></div>
-
-<!-- PROJECT 2 -->
 <div class="card">
-<h3>✅ Manual Checklist (Project 2)</h3>
-
-<b>BUY</b><br>
-<label><input type="checkbox" id="b1"> Strong Trend</label><br>
-<label><input type="checkbox" id="b2"> Reversal</label><br>
-<label><input type="checkbox" id="b3"> Momentum</label><br><br>
-
-<b>SELL</b><br>
-<label><input type="checkbox" id="s1"> Strong Trend</label><br>
-<label><input type="checkbox" id="s2"> Reversal</label><br>
-<label><input type="checkbox" id="s3"> Momentum</label><br>
-
-<button onclick="manualCheck()">Check Manual Signal</button>
-
-<div id="manualResult">Waiting...</div>
+<h3>🔴 SELL SETUPS</h3>
+<label><input type="checkbox" id="s1"> Day Down + 4H Down (Strong Trend)</label><br>
+<label><input type="checkbox" id="s2"> Day Up + 4H Bearish Divergence</label><br>
+<label><input type="checkbox" id="s3"> Day Up + Red Candle + 4H Bearish Divergence</label>
 </div>
 
-<!-- FINAL DECISION -->
+<button onclick="calculate()">Analyze</button>
+
 <div class="card">
-<h3>⚡ Final Decision</h3>
-<div id="finalDecision">Waiting...</div>
+<h3>📢 SIGNAL</h3>
+<div id="result">Waiting...</div>
 </div>
 
-<button onclick="refresh()">🔄 Refresh</button>
+<div class="card">
+<h3>🧠 Insight</h3>
+<div id="insight">-</div>
+</div>
 
 </div>
 
 <script>
 
-let symbol = localStorage.getItem("symbol") || "BTCUSDT";
-let ws;
+function calculate(){
 
-let lastAlert = "";
+let b1 = document.getElementById("b1").checked;
+let b2 = document.getElementById("b2").checked;
+let b3 = document.getElementById("b3").checked;
 
-// INIT
-function init(){
- symbol=document.getElementById("symbolInput").value.toUpperCase()||symbol;
- localStorage.setItem("symbol",symbol);
+let s1 = document.getElementById("s1").checked;
+let s2 = document.getElementById("s2").checked;
+let s3 = document.getElementById("s3").checked;
 
- document.getElementById("chart").innerHTML="";
- new TradingView.widget({
-  container_id:"chart",
-  symbol:"BINANCE:"+symbol,
-  interval:"15",
-  theme:"dark",
-  width:"100%",
-  height:300
- });
+let buyScore = 0;
+let sellScore = 0;
+let type = "";
 
- startWS();
- loadData();
- setInterval(loadData,5000);
+// BUY
+if(b1){ buyScore+=3; type="Strong Trend"; }
+if(b2){ buyScore+=2; type="Reversal"; }
+if(b3){ buyScore+=2; type="Momentum"; }
+
+// SELL
+if(s1){ sellScore+=3; type="Strong Trend"; }
+if(s2){ sellScore+=2; type="Reversal"; }
+if(s3){ sellScore+=2; type="Momentum"; }
+
+let signal = "WAIT";
+let confidence = 0;
+
+// DECISION
+if(buyScore > sellScore && buyScore > 0){
+ signal = "🟢 BUY ("+type+")";
+ confidence = buyScore * 25;
+ document.getElementById("result").innerHTML =
+ `<span class="buy">${signal}</span><br>Confidence: ${confidence}%`;
+}
+else if(sellScore > buyScore && sellScore > 0){
+ signal = "🔴 SELL ("+type+")";
+ confidence = sellScore * 25;
+ document.getElementById("result").innerHTML =
+ `<span class="sell">${signal}</span><br>Confidence: ${confidence}%`;
+}
+else if(buyScore === sellScore && buyScore !== 0){
+ document.getElementById("result").innerHTML =
+ `<span class="warn">⚠️ CONFLICT - NO TRADE</span>`;
+}
+else{
+ document.getElementById("result").innerHTML =
+ `<span class="warn">WAIT - No setup</span>`;
 }
 
-// WS
-function startWS(){
- if(ws) ws.close();
- ws=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@trade`);
- ws.onmessage=e=>{
-  let d=JSON.parse(e.data);
-  price.innerText=parseFloat(d.p).toFixed(6);
- };
+// INSIGHT
+let insight = "-";
+
+if(confidence >= 75){
+ insight = "High probability setup";
+}
+else if(confidence >= 50){
+ insight = "Moderate setup";
+}
+else if(confidence > 0){
+ insight = "Weak setup";
+}
+else{
+ insight = "No valid conditions";
 }
 
-// FETCH
-async function get(tf){
- let r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${tf}&limit=100`);
- let d=await r.json();
- return d.map(x=>({c:+x[4],h:+x[2],l:+x[3]}));
-}
-
-// EMA
-function ema(a,p){
- let k=2/(p+1),e=a[0];
- for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k)}
- return e;
-}
-
-let currentAuto = "";
-let currentAI = "";
-
-// MAIN
-async function loadData(){
-
-let c5=await get("5m");
-let c15=await get("15m");
-let c1h=await get("1h");
-let c4h=await get("4h");
-let c1d=await get("1d");
-
-let close5=c5.map(x=>x.c);
-let last=c5[c5.length-1];
-let prev=c5[c5.length-2];
-
-let ema9=ema(close5.slice(-30),9);
-let ema21=ema(close5.slice(-30),21);
-
-let move=Math.abs(last.c-prev.l)/last.c;
-
-// AUTO
-let signal="NO TRADE",cls="";
-if(move>0.003 && ema9>ema21 && last.c>prev.h){signal="BUY";cls="buy";}
-if(move>0.003 && ema9<ema21 && last.c<prev.l){signal="SELL";cls="sell";}
-
-currentAuto = signal;
-
-autoSignal.innerHTML=`<span class="${cls}">${signal}</span>`;
-
-// MTF
-function trend(arr){
- return ema(arr.map(x=>x.c).slice(-30),9)>ema(arr.map(x=>x.c).slice(-30),21);
-}
-
-let t15=trend(c15),t1h=trend(c1h),t4h=trend(c4h),t1d=trend(c1d);
-
-mtfSignal.innerHTML=`
-15m: ${t15?"🟢":"🔴"}<br>
-1H: ${t1h?"🟢":"🔴"}<br>
-4H: ${t4h?"🟢":"🔴"}<br>
-1D: ${t1d?"🟢":"🔴"}
-`;
-
-// AI
-let ai=0;
-if(t15)ai+=15;if(t1h)ai+=25;if(t4h)ai+=30;if(t1d)ai+=30;
-
-let advice=ai>75?"STRONG":ai>50?"GOOD":"WEAK";
-
-currentAI = advice;
-
-aiSignal.innerHTML=`
-<span class="ai">Confidence: ${ai}%</span><br>
-${advice}
-`;
+document.getElementById("insight").innerText = insight;
 
 }
-
-// MANUAL CHECK
-function manualCheck(){
-
-let buyScore=0, sellScore=0;
-
-if(b1.checked) buyScore+=2;
-if(b2.checked) buyScore+=2;
-if(b3.checked) buyScore+=2;
-
-if(s1.checked) sellScore+=2;
-if(s2.checked) sellScore+=2;
-if(s3.checked) sellScore+=2;
-
-let manual="NONE";
-
-if(buyScore>sellScore) manual="BUY";
-else if(sellScore>buyScore) manual="SELL";
-else manual="NONE";
-
-manualResult.innerHTML=manual;
-
-// FINAL DECISION
-let final="NO TRADE";
-
-if(currentAuto==="BUY" && manual==="BUY" && currentAI==="STRONG"){
- final="🚀 STRONG BUY";
-}
-else if(currentAuto==="SELL" && manual==="SELL" && currentAI==="STRONG"){
- final="🔴 STRONG SELL";
-}
-else if(currentAuto!=="NO TRADE"){
- final="⚠️ SCALP ONLY";
-}
-
-finalDecision.innerHTML=final;
-}
-
-function refresh(){location.reload();}
-init();
 
 </script>
+
 </body>
 </html>
