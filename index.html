@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project 2 - Trading Checklist</title>
+
+<style>
+body { background:#0d1117; color:#fff; font-family:sans-serif; margin:0; }
+.container { max-width:420px; margin:auto; padding:10px; }
+.card { background:#161b22; padding:12px; border-radius:10px; margin-bottom:10px; }
+
+button {
+ width:100%;
+ padding:12px;
+ border:none;
+ border-radius:8px;
+ background:#238636;
+ color:#fff;
+ font-size:16px;
+}
+
+.buy{color:#00ff9f;}
+.sell{color:#ff4d4d;}
+.warn{color:#ffaa00;}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>📊 Project 2 - Trading Checklist</h2>
+
+<div class="card">
+<h3>🟢 BUY SETUPS</h3>
+<label><input type="checkbox" id="b1"> Day Up + 4H Up (Strong Trend)</label><br>
+<label><input type="checkbox" id="b2"> Day Down + 4H Bullish Divergence</label><br>
+<label><input type="checkbox" id="b3"> Day Down + Green Candle + 4H Bullish Divergence</label>
+</div>
+
+<div class="card">
+<h3>🔴 SELL SETUPS</h3>
+<label><input type="checkbox" id="s1"> Day Down + 4H Down (Strong Trend)</label><br>
+<label><input type="checkbox" id="s2"> Day Up + 4H Bearish Divergence</label><br>
+<label><input type="checkbox" id="s3"> Day Up + Red Candle + 4H Bearish Divergence</label>
+</div>
+
+<button onclick="calculate()">Analyze</button>
+
+<div class="card">
+<h3>📢 SIGNAL</h3>
+<div id="result">Waiting...</div>
+</div>
+
+<div class="card">
+<h3>🧠 Insight</h3>
+<div id="insight">-</div>
+</div>
+
+</div>
+
+<script>
+
+function calculate(){
+
+let b1 = document.getElementById("b1").checked;
+let b2 = document.getElementById("b2").checked;
+let b3 = document.getElementById("b3").checked;
+
+let s1 = document.getElementById("s1").checked;
+let s2 = document.getElementById("s2").checked;
+let s3 = document.getElementById("s3").checked;
+
+let buyScore = 0;
+let sellScore = 0;
+let type = "";
+
+// BUY
+if(b1){ buyScore+=3; type="Strong Trend"; }
+if(b2){ buyScore+=2; type="Reversal"; }
+if(b3){ buyScore+=2; type="Momentum"; }
+
+// SELL
+if(s1){ sellScore+=3; type="Strong Trend"; }
+if(s2){ sellScore+=2; type="Reversal"; }
+if(s3){ sellScore+=2; type="Momentum"; }
+
+let signal = "WAIT";
+let confidence = 0;
+
+// DECISION
+if(buyScore > sellScore && buyScore > 0){
+ signal = "🟢 BUY ("+type+")";
+ confidence = buyScore * 25;
+ document.getElementById("result").innerHTML =
+ `<span class="buy">${signal}</span><br>Confidence: ${confidence}%`;
+}
+else if(sellScore > buyScore && sellScore > 0){
+ signal = "🔴 SELL ("+type+")";
+ confidence = sellScore * 25;
+ document.getElementById("result").innerHTML =
+ `<span class="sell">${signal}</span><br>Confidence: ${confidence}%`;
+}
+else if(buyScore === sellScore && buyScore !== 0){
+ document.getElementById("result").innerHTML =
+ `<span class="warn">⚠️ CONFLICT - NO TRADE</span>`;
+}
+else{
+ document.getElementById("result").innerHTML =
+ `<span class="warn">WAIT - No setup</span>`;
+}
+
+// INSIGHT
+let insight = "-";
+
+if(confidence >= 75){
+ insight = "High probability setup";
+}
+else if(confidence >= 50){
+ insight = "Moderate setup";
+}
+else if(confidence > 0){
+ insight = "Weak setup";
+}
+else{
+ insight = "No valid conditions";
+}
+
+document.getElementById("insight").innerText = insight;
+
+}
+
+</script>
+
+</body>
+</html>
